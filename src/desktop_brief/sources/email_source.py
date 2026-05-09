@@ -34,6 +34,27 @@ def _coerce_list(result: Any) -> list[dict[str, Any]]:
     return []
 
 
+def _dedupe(messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Thunderbird returns the same message twice when a copy lives in multiple
+    folders (e.g. an account Inbox + Local Folders, or the same address received
+    on multiple accounts). The MCP `id` is folder-internal — copies of the same
+    message get *different* ids — so we dedupe by an (author, subject, date)
+    fingerprint instead."""
+    seen: set[tuple[str, str, str]] = set()
+    out = []
+    for m in messages:
+        fp = (
+            str(m.get("author") or m.get("from") or "").strip().lower(),
+            str(m.get("subject") or "").strip().lower(),
+            str(m.get("date") or "")[:19],  # truncate to second precision
+        )
+        if fp in seen:
+            continue
+        seen.add(fp)
+        out.append(m)
+    return out
+
+
 class EmailSource(Source):
     name = "email"
 
@@ -64,8 +85,8 @@ class EmailSource(Source):
             write_source("email", {"available": False, "reason": str(e)[:300]})
             return
 
-        unread = _coerce_list(unread_raw)
-        starred = _coerce_list(starred_raw)
+        unread = _dedupe(_coerce_list(unread_raw))
+        starred = _dedupe(_coerce_list(starred_raw))
 
         top_unread = [_summarize_message(m) for m in unread[:20]]
         starred_top = [_summarize_message(m) for m in starred[:20]]

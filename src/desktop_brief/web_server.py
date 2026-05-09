@@ -28,10 +28,15 @@ class _SilentHandler(http.server.SimpleHTTPRequestHandler):
         super().end_headers()
 
 
+class _ReuseAddrServer(socketserver.ThreadingTCPServer):
+    """Set SO_REUSEADDR so a quick systemd restart doesn't TIME_WAIT-block us."""
+    allow_reuse_address = True
+
+
 def serve_in_background(host: str = "127.0.0.1", port: int = 8766) -> threading.Thread:
     ensure_dirs()
     handler_cls = partial(_SilentHandler, directory=str(STATE_DIR))
-    httpd = socketserver.ThreadingTCPServer((host, port), handler_cls)
+    httpd = _ReuseAddrServer((host, port), handler_cls)
     httpd.daemon_threads = True
     t = threading.Thread(
         target=httpd.serve_forever,

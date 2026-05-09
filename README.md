@@ -1,63 +1,140 @@
-# desktop-brief
+<p align="center">
+  <img src="assets/banner.svg" alt="desktop-brief" width="100%">
+</p>
 
-A live Jarvis-style desktop briefing for Ubuntu / GNOME-on-Xorg.
+<p align="center">
+  <strong>A live, Jarvis-style desktop briefing for Ubuntu / GNOME-on-Xorg.</strong><br>
+  <em>Email · Calendar · Weather · Markets · Hardware · News · Hot-takes · Critical-mineral grants — all on one screen.</em>
+</p>
 
-A background daemon polls email, calendar, weather, stocks, news headlines,
-and SBIR / DOE grant opportunities, writing each source to its own JSON state
-file. Two front-ends consume that state:
+<p align="center">
+  <a href="#quick-start"><img alt="status" src="https://img.shields.io/badge/status-alpha-22d3ee?style=flat-square&labelColor=02060a"></a>
+  <img alt="python" src="https://img.shields.io/badge/python-3.11%2B-22d3ee?style=flat-square&labelColor=02060a">
+  <img alt="ubuntu" src="https://img.shields.io/badge/ubuntu-24%2B-22d3ee?style=flat-square&labelColor=02060a">
+  <img alt="display" src="https://img.shields.io/badge/display-X11-22d3ee?style=flat-square&labelColor=02060a">
+  <img alt="license" src="https://img.shields.io/badge/license-MIT-22d3ee?style=flat-square&labelColor=02060a">
+</p>
 
-- **Eww overlay** — always-on-top corner widget with live ticker, weather,
-  next calendar event, mail counts, and per-source health dots.
-- **Chromium kiosk briefing** — fullscreen Jarvis-themed dashboard summoned
-  by `Super+J`, with clickable rows that deep-dive into Thunderbird,
-  the browser, or the relevant source.
+<p align="center">
+  <img src="assets/screenshot-briefing.png" alt="desktop-brief Jarvis dashboard" width="100%">
+</p>
 
-A Claude Code `SessionStart` hook reads the same state and shows a one-screen
-markdown briefing whenever you open a Claude Code session.
+---
+
+## What it is
+
+A background daemon polls eight live sources and writes JSON state to
+`~/.local/state/desktop-brief/`. Three independent front-ends consume that
+state, each tuned for a different moment:
+
+| Surface | What it shows | When you see it |
+|---|---|---|
+| **Chromium kiosk briefing** | Full-screen Jarvis-themed dashboard with backdrop-filter glass panels, animated arc reactor, scanlines, gauges, and clickable rows | Press `Super+J` |
+| **Eww overlay** | Always-on-top corner widget — clock, weather, ticker, mail counts, system gauges, health dots | `eww open overlay` |
+| **Claude Code SessionStart hook** | One-screen markdown briefing injected into every Claude Code session | Automatic on each new Claude Code session |
+
+All three read the same JSON files. The data layer is decoupled from
+presentation, so you can swap or skin any front-end without touching the
+backend.
 
 ## Architecture
 
 ```
-┌─ desktop-brief-daemon (systemd --user) ──────────────────────────┐
+┌─ desktop-brief-daemon (systemd --user, asyncio) ─────────────────┐
 │                                                                   │
-│  asyncio supervisor                                               │
-│   ├─ email_source       (Thunderbird MCP, 60s)                    │
-│   ├─ calendar_source    (Thunderbird MCP, 60s, 15-min reminders)  │
-│   ├─ weather            (wttr.in, 30 min)                         │
-│   ├─ stocks             (Yahoo Finance, 60s mkt-hours / 15m off)  │
-│   ├─ news_headlines     (Anthropic + WebSearch, 15 min)           │
-│   ├─ news_hottake       (Anthropic, daily)                        │
-│   └─ grants             (Anthropic + WebSearch, 6 h)              │
+│  ┌─ email_source       Thunderbird MCP (stdio bridge)   60 s ─┐  │
+│  ┌─ calendar_source    Thunderbird MCP + 15-min reminders     │  │
+│  ┌─ weather            wttr.in JSON                    30 min │  │
+│  ┌─ stocks             Stooq CSV (~21 tickers)         60 s   │  │
+│  ┌─ hardware           psutil + nvidia-smi              2 s    │  │
+│  ┌─ news_headlines     Anthropic API + web_search      15 min │  │
+│  ┌─ news_hottake       Anthropic API (analysis)        daily  │  │
+│  └─ grants             Anthropic + web_search → DOE/SBIR 6 h  │  │
 │                                                                   │
-│  writes -> ~/.local/state/desktop-brief/{source}.json (atomic)    │
-└────────────────────┬─────────────────────────────────────────────-┘
-                     │
-        ┌────────────┴───────────────────────────┐
-        ▼                                        ▼
-┌─ Eww overlay (X11) ──┐    ┌─ Chromium kiosk briefing ─┐
-│ Always on top.       │    │ Summoned by Super+J.      │
-│ Reads JSON via jq.   │    │ Reads JSON via fetch().   │
-│ Refreshes every 5s.  │    │ Full Jarvis-themed CSS.   │
-└──────────────────────┘    └───────────────────────────┘
-                     │
-                     ▼
-         ┌─ Claude Code SessionStart hook ─┐
-         │ dbrief-render --markdown        │
-         │ Injected into session context.  │
-         └─────────────────────────────────┘
+│  health.json + LLM-usage caps + atomic JSON state writes          │
+└─────────────────────────────┬────────────────────────────────────-┘
+                              │
+                ┌─────────────┴────────────────┐
+                ▼                              ▼
+   ┌─ Chromium kiosk briefing ─┐    ┌─ Eww overlay (X11) ──┐
+   │ Fullscreen HTML/CSS/JS    │    │ Always-on-top corner │
+   │ Glass panels, scanlines,  │    │ widget. defpoll on   │
+   │ arc reactor, gauges.      │    │ jq state extracts.   │
+   │ Bound to Super+J.         │    │ Light + native.      │
+   │ Reads via local HTTP:8766 │    │ Reads JSON via jq.   │
+   └───────────────────────────┘    └──────────────────────┘
+                              │
+                              ▼
+              ┌─ Claude Code SessionStart hook ─┐
+              │ dbrief-render --hook-json       │
+              │ Markdown briefing -> additional │
+              │ Context on every session.       │
+              └─────────────────────────────────┘
 ```
 
-## Requirements
+## Features
 
-- Ubuntu 24+ (X11 session — Eww does not work on GNOME Wayland; the install
-  script will warn if you're on Wayland)
+### Live data sources
+
+- **📧 Email** — across all Thunderbird accounts. Dedupes copies-across-folders
+  by `(author, subject, date)` fingerprint so the same message in your Inbox
+  + Local Folders archive only appears once. Filters: unread last 24 h + starred.
+- **📅 Calendar** — today + tomorrow events from Thunderbird's calendar.
+  Fires `notify-send` reminders 15 minutes before each event with persistent
+  dedup state so a daemon restart doesn't re-fire morning alarms.
+- **🌡 Weather** — wttr.in (Norman, OK by default; override with `WEATHER_QUERY`).
+- **📈 Markets** — ~21 tickers via Stooq's free CSV API (no auth, no rate-limit
+  pain). Indexes (Dow / Nasdaq / S&P), tech megacaps, robotics, space,
+  rare-earth & critical minerals. Market-hours-aware cadence: 60 s during
+  regular session, 15 min off-hours.
+- **🖥 Hardware** — CPU, RAM, disk, network throughput, temperatures via
+  `psutil`. NVIDIA GPU utilisation/memory/temp via `nvidia-smi`.
+- **📰 News + daily Hot Take** — top headlines every 15 min via the Anthropic
+  API + the `web_search` server tool. Hot-take editorial summary regenerates
+  once a day (LLM-cost-controlled).
+- **💰 Grants** — DOE / SBIR / ARPA-E open funding opportunities for critical
+  minerals, REE, advanced materials, and geothermal lithium. Sorted by
+  deadline. Refreshed every 6 h.
+
+### Reliability + cost guardrails
+
+- **Atomic state writes** — `tmpfile + os.replace` so readers never see a
+  half-written JSON file.
+- **Per-source health tracking** — `health.json` records `last_success`,
+  `last_error`, `consecutive_failures`. Both front-ends render coloured dots
+  (green / amber / red) so you can see at a glance which sources are healthy.
+- **Backoff on failure** — exponential up to 5 minutes per source.
+- **LLM call caps** — daily limits per source (`LLM_DAILY_CALL_CAP_NEWS=120`,
+  etc.) with usage tracked in `llm_usage.json`. Prompt caching on system
+  prompts to control spend.
+- **Graceful degradation** — Thunderbird offline? Email + calendar mark
+  themselves unavailable instead of crashing. Yahoo blocked your IP? We never
+  used Yahoo — Stooq is the primary source for exactly this reason.
+
+### `dbrief-doctor` health check
+
+```bash
+dbrief-doctor   # (or `make doctor`)
+```
+
+Verifies session type (X11 required for Eww), all required binaries
+(`python3`, `node`, `jq`, `notify-send`, …), `.env` config, systemd unit
+status, MCP bridge reachability, and per-source freshness — emits coloured
+✓ / ! / ✗ for each.
+
+## Quick start
+
+### Requirements
+
+- Ubuntu 24+ on an **X11 session** (Eww does not work on GNOME Wayland —
+  Mutter doesn't implement `wlr-layer-shell`)
 - Python ≥ 3.11
 - Node ≥ 18 (for the Thunderbird MCP bridge)
-- Cargo (the install script uses `cargo install eww`)
-- Thunderbird with the `thunderbird-mcp` extension installed
-- Anthropic API key (for news / hot-takes / grants)
+- Cargo (the installer builds Eww from upstream git)
+- Thunderbird with the [thunderbird-mcp](https://github.com/TKasperczyk/thunderbird-mcp) extension installed
+- An Anthropic API key (only required for news / hot-takes / grants)
 
-## Install
+### Install
 
 ```bash
 git clone https://github.com/TheOKGrizzly/desktop-brief.git
@@ -65,23 +142,135 @@ cd desktop-brief
 ./install.sh
 ```
 
-The install script handles apt deps, Eww (via cargo), the Python venv, the
-systemd user service, and the GNOME `Super+J` shortcut. After it finishes,
-it prints two manual follow-ups: adding the SessionStart hook to
-`~/.claude/settings.json` and registering Thunderbird MCP in `~/.claude.json`
-(both copy-pasteable from `docs/CLAUDE_HOOK_SETUP.md`).
+The installer is idempotent. It:
+1. Installs apt deps (`jq`, `libnotify-bin`, GTK/Eww build deps, …)
+2. Installs `rustup` if cargo is missing
+3. Builds Eww from `github.com/elkowar/eww` (X11-only build, ~5 min the first time)
+4. Creates the Python venv and installs the package editable
+5. Seeds `.env` from `.env.example` (chmod 600)
+6. Symlinks `eww/` into `~/.config/eww/desktop-brief`
+7. Installs and enables the `desktop-brief.service` systemd `--user` unit
+8. Binds `Super+J` to open the Chromium briefing via GNOME custom shortcut
 
-## Quick reference
+### Manual follow-ups (the installer prints these)
 
-| `make install`      | install everything (idempotent)                 |
-| `make uninstall`    | remove systemd unit + GNOME shortcut + venv     |
-| `make logs`         | tail the daemon journal                         |
-| `make status`       | systemd unit status                             |
-| `make restart`      | restart the daemon                              |
-| `make doctor`       | run `dbrief-doctor` health checks               |
-| `make test`         | run unit tests                                  |
+1. **Add your Anthropic API key** to `.env`
+2. **Install the Thunderbird MCP `.xpi`** via Thunderbird's add-on manager
+   (one-time GUI step the installer can't do for you)
+3. **Wire the Claude Code hook + MCP server** — copy-pasteable JSON in
+   [`docs/CLAUDE_HOOK_SETUP.md`](docs/CLAUDE_HOOK_SETUP.md)
 
-## Project layout
+### Daily commands
 
-See `docs/ARCHITECTURE.md` for the full layout and component overview, and
-`docs/DATA_CONTRACT.md` for the JSON schemas that the daemon writes.
+| | |
+|---|---|
+| `make logs` | Tail the daemon journal |
+| `make status` | Systemd unit status |
+| `make restart` | Restart the daemon |
+| `make doctor` | Run `dbrief-doctor` health check |
+| `make test` | Run the unit tests |
+| `dbrief-render --markdown` | Print the briefing to stdout |
+| `~/.cargo/bin/eww --config ~/.config/eww/desktop-brief open overlay` | Open the corner overlay |
+
+## Configuration
+
+Most knobs live in `src/desktop_brief/config.py` (ticker list, source
+intervals) and are loaded from `.env` at startup.
+
+### Environment variables (`.env`)
+
+| Name | Default | Purpose |
+|---|---|---|
+| `ANTHROPIC_API_KEY` | _required_ for LLM sources | News / hot-take / grants |
+| `CLAUDE_MODEL` | `claude-sonnet-4-6` | Override the model for LLM-backed sources |
+| `THUNDERBIRD_MCP_BRIDGE` | `~/projects/thunderbird-mcp/mcp-bridge.cjs` | Path to the bridge if you cloned it elsewhere |
+| `WEATHER_QUERY` | `Norman,OK` | wttr.in location string |
+| `TZ_LOCAL` | `America/Chicago` | Display timezone |
+| `TZ_MARKET` | `America/New_York` | Market-hours timezone |
+| `LLM_DAILY_CALL_CAP_NEWS` | `120` | Max headline calls per day (96 covers 15-min cadence) |
+| `LLM_DAILY_CALL_CAP_HOTTAKE` | `3` | Max hot-take regenerations per day |
+| `LLM_DAILY_CALL_CAP_GRANTS` | `8` | Max grant polls per day |
+
+### Watchlist
+
+Edit `INDEX_SYMBOLS` and `WATCHLIST_SYMBOLS` in `src/desktop_brief/config.py`.
+Symbols are Yahoo-style (`TSLA`, `^DJI`); Stooq mapping happens automatically.
+
+## Repo layout
+
+```
+desktop-brief/
+├─ assets/             logo, banner, screenshot, social preview
+├─ briefing/           Chromium kiosk dashboard (HTML/CSS/JS)
+├─ docs/               CLAUDE_HOOK_SETUP, architecture notes
+├─ eww/                yuck overlay config + scss + jq scripts
+├─ gnome/              apply-shortcut.sh (Super+J binding)
+├─ hooks/              session_start.sh — Claude Code SessionStart wrapper
+├─ src/desktop_brief/
+│  ├─ cli/             daemon_main, render_main, doctor entrypoints
+│  ├─ llm/             Anthropic client + cached system prompts
+│  ├─ mcp/             Thunderbird MCP stdio client (no anthropic-sdk dep)
+│  ├─ render/          state JSON → markdown briefing
+│  └─ sources/         email, calendar, weather, stocks, hardware, news, grants
+├─ systemd/            user systemd unit
+├─ tests/              pytest suite (state, stocks market hours, render)
+├─ install.sh / uninstall.sh
+└─ Makefile
+```
+
+## State files (the JSON contract)
+
+All files live in `~/.local/state/desktop-brief/` with envelope:
+
+```json
+{
+  "schema_version": 1,
+  "generated_at": "2026-05-09T00:42:08+00:00",
+  "source": "weather",
+  "data": { ... }
+}
+```
+
+Per-source schemas are documented in
+[`docs/CLAUDE_HOOK_SETUP.md`](docs/CLAUDE_HOOK_SETUP.md) and inferable from
+the Python source files in `src/desktop_brief/sources/`.
+
+## Why these tech choices
+
+- **Eww + Chromium hybrid** — Eww (GTK) is great for cheap, native, always-on
+  widgets but its CSS subset can't reproduce the holographic effects
+  (`backdrop-filter`, `clip-path`, `mix-blend-mode`) that make a Jarvis
+  dashboard look like one. Chromium kiosk gives full CSS for the marquee
+  briefing window without giving up Eww's lightweight overlay.
+- **Stooq, not Yahoo** — Yahoo Finance aggressively 429s home and server IPs
+  and requires a brittle crumb/cookie dance. Stooq is free, no auth, and
+  more lenient. We pay a small cost (per-symbol fetch instead of batch) for
+  much better reliability.
+- **stdio JSON-RPC client, not the MCP SDK** — the MCP SDK is overkill when
+  the daemon only needs to call four tools. A 200-line stdio client with
+  request/response correlation is simpler, has fewer moving parts, and
+  makes the Anthropic-SDK direct LLM client coherent with no second runtime.
+- **Local HTTP server for the briefing** — Chromium blocks `file://` fetches
+  for security. A localhost-only `http.server` thread on `127.0.0.1:8766`
+  serves the state directory; no `--allow-file-access-from-files` flags or
+  fragile URL hacks.
+
+## Acknowledgements
+
+- [TKasperczyk/thunderbird-mcp](https://github.com/TKasperczyk/thunderbird-mcp) — the Thunderbird MCP extension and bridge
+- [elkowar/eww](https://github.com/elkowar/eww) — the always-on-top widget toolkit
+- [wttr.in](https://wttr.in/) — free weather JSON
+- [stooq.com](https://stooq.com/) — free market data CSV
+- The [Anthropic Claude API](https://www.anthropic.com/) for news synthesis and grant scouting
+- Visual debt to Jayse Hansen's MCU FUI work and the entire `r/unixporn`
+  cyberpunk dashboard tradition
+
+## License
+
+MIT. See [LICENSE](LICENSE).
+
+---
+
+<p align="center">
+  <em>Built in one evening with Claude Opus 4.7. PRs and forks welcome.</em>
+</p>
