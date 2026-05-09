@@ -25,18 +25,20 @@
 (defpoll health_dots  :interval "5s"   "$HOME/projects/desktop-brief/eww/scripts/health_dots.sh")
 
 ;; ---- widgets ----------------------------------------------------------------
-(defwidget header []
+;; All widget names are db_-prefixed to avoid collisions with Eww builtins
+;; (e.g. `calendar`, `image`, `slider`, `progress`, etc.).
+(defwidget db_header []
   (box :class "header" :orientation "h" :space-evenly false :spacing 0
     (label :class "brand" :text "▣ DESKTOP BRIEF")
     (label :class "spacer" :hexpand true :text "")
     (label :class "mkt-state" :text mkt_state)))
 
-(defwidget clock []
+(defwidget db_clock []
   (box :class "clock" :orientation "v" :space-evenly false :halign "fill"
     (label :class "clock-time" :text clock_time)
     (label :class "clock-date" :text clock_date)))
 
-(defwidget weather []
+(defwidget db_weather []
   (box :class "tile" :orientation "h" :space-evenly false :spacing 8
     (label :class "tile-icon" :text weather_icon)
     (box :orientation "v" :space-evenly false :spacing 0 :hexpand true
@@ -44,13 +46,13 @@
       (label :class "tile-sub" :text weather_cond :halign "start")
       (label :class "tile-meta" :text "hi ${weather_hi} / lo ${weather_lo}" :halign "start"))))
 
-(defwidget calendar []
+(defwidget db_calendar []
   (box :class "tile" :orientation "v" :space-evenly false :spacing 0
     (label :class "tile-label" :text "▶ NEXT EVENT" :halign "start")
     (label :class "tile-big" :text cal_next :halign "start" :limit-width 26)
     (label :class "tile-sub" :text "in ${cal_mins} min" :halign "start")))
 
-(defwidget mail []
+(defwidget db_mail []
   (box :class "tile" :orientation "h" :space-evenly true :spacing 8
     (box :orientation "v" :space-evenly false
       (label :class "tile-big" :text mail_unread :halign "center")
@@ -59,7 +61,7 @@
       (label :class "tile-big tile-accent" :text mail_starred :halign "center")
       (label :class "tile-label" :text "STARRED" :halign "center"))))
 
-(defwidget hardware []
+(defwidget db_hardware []
   (box :class "tile" :orientation "v" :space-evenly false :spacing 4
     (label :class "tile-label" :text "▶ SYSTEM" :halign "start")
     (box :orientation "h" :space-evenly true :spacing 6
@@ -73,27 +75,27 @@
         (label :class "tile-mid" :text "${cpu_temp}°")
         (label :class "tile-label" :text "TEMP")))))
 
-(defwidget ticker []
+(defwidget db_ticker []
   (box :class "tile ticker" :orientation "v" :space-evenly false :spacing 2
     (label :class "tile-label" :text "▶ MARKETS" :halign "start")
     (label :class "ticker-line" :text ticker_line :halign "start" :limit-width 38)))
 
-(defwidget health []
+(defwidget db_health []
   (box :class "health" :orientation "h" :space-evenly false :spacing 4
     (label :class "tile-label" :text "▶ HEALTH" :halign "start")
     (label :hexpand true :text "")
     (label :class "health-dots" :markup health_dots :halign "end")))
 
-(defwidget overlay_box []
+(defwidget db_overlay []
   (box :class "overlay" :orientation "v" :space-evenly false :spacing 8
-    (header)
-    (clock)
-    (weather)
-    (calendar)
-    (mail)
-    (hardware)
-    (ticker)
-    (health)))
+    (db_header)
+    (db_clock)
+    (db_weather)
+    (db_calendar)
+    (db_mail)
+    (db_hardware)
+    (db_ticker)
+    (db_health)))
 
 ;; ---- windows ----------------------------------------------------------------
 (defwindow overlay
@@ -102,4 +104,4 @@
   :stacking "fg"
   :windowtype "dock"
   :wm-ignore false
-  (overlay_box))
+  (db_overlay))
