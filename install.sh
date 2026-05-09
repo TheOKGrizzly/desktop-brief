@@ -55,14 +55,18 @@ fi
 
 # ---- rust + eww ----
 if ! command -v eww >/dev/null 2>&1; then
+    # Make sure cargo is on PATH even if user hasn't sourced rustup env yet.
+    [[ -f "$HOME/.cargo/env" ]] && source "$HOME/.cargo/env"
     if ! command -v cargo >/dev/null 2>&1; then
         c_blue "==> Installing rustup (cargo needed to build eww)"
         curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
         # shellcheck disable=SC1091
         source "$HOME/.cargo/env"
     fi
-    c_blue "==> Building eww via cargo (this takes a few minutes the first time)"
-    cargo install eww --locked --no-default-features --features x11
+    c_blue "==> Building eww via cargo from git (this takes a few minutes the first time)"
+    # Eww is not on crates.io — install directly from the upstream repo.
+    # X11-only build (GNOME/Wayland needs wlr-layer-shell which Mutter lacks).
+    cargo install --git https://github.com/elkowar/eww --locked --no-default-features --features x11 eww
 else
     c_green "✓ eww already installed: $(command -v eww)"
 fi
