@@ -100,7 +100,9 @@
 ;; ---- windows ----------------------------------------------------------------
 (defwindow overlay
   :monitor 0
-  :geometry (geometry :x "12px" :y "12px" :width "320px" :height "auto" :anchor "top right")
+  ;; Height is a fixed cap; the panel sizes its contents within this box.
+  ;; Bump if you ever add more tiles than the current eight.
+  :geometry (geometry :x "12px" :y "12px" :width "320px" :height "780px" :anchor "top right")
   :stacking "fg"
   :windowtype "dock"
   :wm-ignore false
