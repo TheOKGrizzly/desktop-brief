@@ -1,0 +1,41 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "desktop-brief"
+version = "0.1.0"
+description = "Live Jarvis-style desktop briefing: email, calendar, weather, stocks, news, grants."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { file = "LICENSE" }
+authors = [{ name = "Travis Turner" }]
+dependencies = [
+    "httpx>=0.27",
+    "anthropic>=0.40",
+    "python-dotenv>=1.0",
+    "psutil>=5.9",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+    "ruff>=0.5",
+]
+
+[project.scripts]
+desktop-brief-daemon = "desktop_brief.cli.daemon_main:main"
+dbrief-render        = "desktop_brief.cli.render_main:main"
+dbrief-doctor        = "desktop_brief.cli.doctor:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/desktop_brief"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"

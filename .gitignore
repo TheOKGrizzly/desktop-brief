@@ -1,0 +1,31 @@
+# secrets
+.env
+*.pem
+*.key
+
+# python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+dist/
+build/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# state / logs (runtime artifacts; should live in ~/.local/state, not the repo,
+# but ignore here too in case anyone test-runs from the repo root)
+state/
+*.log
+calendar_fired.json
+
+# editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# os
+.DS_Store
+Thumbs.db

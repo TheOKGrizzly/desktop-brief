@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>desktop-brief</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="css/jarvis.css">
+</head>
+<body class="boot">
+
+<div class="scanlines"></div>
+<div class="vignette"></div>
+
+<header class="hud-header">
+  <div class="brand">
+    <span class="brand-mark">▣</span>
+    <span class="brand-name">DESKTOP&nbsp;BRIEF</span>
+    <span class="brand-build">v0.1 / NORMAN-OK</span>
+  </div>
+  <div class="hud-clock">
+    <div id="clock-time" class="clock-time">--:--:--</div>
+    <div id="clock-date" class="clock-date">— — —</div>
+  </div>
+  <div class="hud-status">
+    <span id="market-state" class="pill">MARKET ?</span>
+    <span id="health-summary" class="pill">SYSTEM OK</span>
+    <button id="refresh-btn" class="pill ghost" title="Force refresh now">↻ REFRESH</button>
+    <button id="close-btn" class="pill ghost danger" title="Close briefing (Esc)">✕</button>
+  </div>
+</header>
+
+<main class="grid">
+
+  <!-- Inbox panel -->
+  <section class="panel panel-tall" data-source="email">
+    <div class="panel-head">
+      <h2><span class="hexlabel">01</span> INBOX</h2>
+      <div class="panel-meta">
+        <span id="email-unread" class="big-num">—</span>
+        <span class="dim">unread · 24h</span>
+        <span id="email-starred" class="big-num accent-warm">—</span>
+        <span class="dim">starred</span>
+      </div>
+    </div>
+    <ul id="email-list" class="row-list scrollable"></ul>
+  </section>
+
+  <!-- Calendar -->
+  <section class="panel panel-tall" data-source="calendar">
+    <div class="panel-head">
+      <h2><span class="hexlabel">02</span> CALENDAR</h2>
+    </div>
+    <div id="calendar-next" class="next-event">
+      <div class="next-label">NEXT EVENT</div>
+      <div id="calendar-next-title" class="big-event">—</div>
+      <div id="calendar-next-when" class="dim">—</div>
+    </div>
+    <div class="subhead">TODAY</div>
+    <ul id="calendar-today" class="row-list scrollable"></ul>
+    <div class="subhead">TOMORROW</div>
+    <ul id="calendar-tomorrow" class="row-list"></ul>
+  </section>
+
+  <!-- Stocks -->
+  <section class="panel panel-tall" data-source="stocks">
+    <div class="panel-head">
+      <h2><span class="hexlabel">03</span> MARKETS</h2>
+      <div class="panel-meta dim" id="stocks-meta">—</div>
+    </div>
+    <div class="subhead">INDICES</div>
+    <ul id="stocks-indices" class="ticker-list"></ul>
+    <div class="subhead">WATCHLIST</div>
+    <ul id="stocks-watch" class="ticker-list scrollable"></ul>
+  </section>
+
+  <!-- Weather + System (stacked) -->
+  <section class="panel panel-half" data-source="weather">
+    <div class="panel-head">
+      <h2><span class="hexlabel">04</span> WEATHER</h2>
+      <div class="panel-meta dim" id="weather-loc">NORMAN, OK</div>
+    </div>
+    <div class="weather-body">
+      <div id="weather-icon" class="weather-icon">🌡</div>
+      <div class="weather-stats">
+        <div id="weather-temp" class="big-num">—°</div>
+        <div id="weather-cond" class="dim">—</div>
+        <div id="weather-meta" class="dim">hi — / lo —</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel panel-half" data-source="hardware">
+    <div class="panel-head">
+      <h2><span class="hexlabel">05</span> SYSTEM</h2>
+      <div id="hardware-uptime" class="panel-meta dim">—</div>
+    </div>
+    <div class="gauges">
+      <div class="gauge"><svg viewBox="0 0 80 80"><circle class="track" cx="40" cy="40" r="34"/><circle id="gauge-cpu-arc" class="arc" cx="40" cy="40" r="34"/></svg><div class="gauge-label"><span id="gauge-cpu" class="gauge-num">0</span><span class="gauge-unit">% CPU</span></div></div>
+      <div class="gauge"><svg viewBox="0 0 80 80"><circle class="track" cx="40" cy="40" r="34"/><circle id="gauge-mem-arc" class="arc" cx="40" cy="40" r="34"/></svg><div class="gauge-label"><span id="gauge-mem" class="gauge-num">0</span><span class="gauge-unit">% RAM</span></div></div>
+      <div class="gauge"><svg viewBox="0 0 80 80"><circle class="track" cx="40" cy="40" r="34"/><circle id="gauge-disk-arc" class="arc" cx="40" cy="40" r="34"/></svg><div class="gauge-label"><span id="gauge-disk" class="gauge-num">0</span><span class="gauge-unit">% DISK</span></div></div>
+    </div>
+    <div class="hardware-meta">
+      <span id="hw-temp">—</span> · <span id="hw-net">net 0/0 kb/s</span> · <span id="hw-load">load 0/0/0</span>
+    </div>
+  </section>
+
+  <!-- News + hot take -->
+  <section class="panel panel-wide" data-source="news">
+    <div class="panel-head">
+      <h2><span class="hexlabel">06</span> NEWS · DAILY HOT TAKE</h2>
+      <div class="panel-meta dim" id="news-meta">—</div>
+    </div>
+    <div class="news-body">
+      <div class="news-take">
+        <div class="subhead">TODAY'S READ</div>
+        <div id="news-take" class="news-take-md">—</div>
+      </div>
+      <div class="news-headlines">
+        <div class="subhead">HEADLINES</div>
+        <ul id="news-list" class="row-list scrollable"></ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- Grants -->
+  <section class="panel" data-source="grants">
+    <div class="panel-head">
+      <h2><span class="hexlabel">07</span> OPEN GRANTS</h2>
+      <div class="panel-meta dim" id="grants-meta">—</div>
+    </div>
+    <ul id="grants-list" class="row-list scrollable"></ul>
+  </section>
+
+</main>
+
+<footer class="hud-footer">
+  <div class="health-grid" id="health-grid"></div>
+  <div class="footer-meta">
+    <span class="dim">PRESS</span> <kbd>Esc</kbd> <span class="dim">TO CLOSE · DATA STREAM ACTIVE</span>
+  </div>
+  <div class="reactor"><div class="reactor-core"></div><div class="reactor-ring"></div></div>
+</footer>
+
+<script src="js/dashboard.js"></script>
+</body>
+</html>

@@ -1,0 +1,89 @@
+/* desktop-brief overlay — Jarvis-adjacent within GTK CSS limits. */
+
+$bg: rgba(2, 6, 10, 0.78);
+$accent: #22d3ee;
+$accent-warm: #ffb000;
+$accent-red: #ef4444;
+$text: #d1d5db;
+$muted: #6b7280;
+$mono: "JetBrains Mono", "Fira Code", "DejaVu Sans Mono", monospace;
+$display: "Orbitron", "Rajdhani", "DejaVu Sans", sans-serif;
+
+* {
+  font-family: $mono;
+  font-size: 12px;
+  color: $text;
+}
+
+.overlay {
+  background-color: $bg;
+  border: 1px solid rgba(34, 211, 238, 0.35);
+  border-radius: 4px;
+  padding: 12px;
+}
+
+.header {
+  border-bottom: 1px solid rgba(34, 211, 238, 0.25);
+  padding-bottom: 6px;
+  margin-bottom: 4px;
+
+  .brand {
+    font-family: $display;
+    font-weight: bold;
+    font-size: 11px;
+    color: $accent;
+    letter-spacing: 1.5px;
+  }
+  .mkt-state {
+    color: $muted;
+    font-size: 10px;
+    letter-spacing: 1px;
+  }
+}
+
+.clock {
+  margin-bottom: 4px;
+
+  .clock-time {
+    font-family: $display;
+    font-size: 28px;
+    color: $accent;
+    font-weight: bold;
+    letter-spacing: 2px;
+  }
+  .clock-date {
+    color: $muted;
+    font-size: 10px;
+    letter-spacing: 2px;
+  }
+}
+
+.tile {
+  background-color: rgba(34, 211, 238, 0.05);
+  border-left: 2px solid rgba(34, 211, 238, 0.45);
+  padding: 8px 10px;
+  border-radius: 2px;
+}
+
+.tile-label {
+  color: $muted;
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  font-weight: bold;
+}
+.tile-big   { font-size: 18px; color: $accent; font-weight: bold; }
+.tile-mid   { font-size: 16px; color: $text;  font-weight: bold; }
+.tile-sub   { color: $text; font-size: 11px; }
+.tile-meta  { color: $muted; font-size: 10px; }
+.tile-icon  { font-size: 24px; }
+.tile-accent { color: $accent-warm; }
+
+.ticker-line {
+  font-family: $mono;
+  font-size: 11px;
+  color: $text;
+}
+
+.health-dots {
+  font-size: 10px;
+}

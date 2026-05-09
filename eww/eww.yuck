@@ -1,0 +1,105 @@
+;; desktop-brief Eww overlay — always-on-top corner widget.
+;; Reads JSON state files written by the daemon; refreshes via defpoll.
+
+;; ---- pollers ----------------------------------------------------------------
+(defpoll clock_time   :interval "1s"   "date '+%H:%M:%S'")
+(defpoll clock_date   :interval "60s"  "date '+%a %b %-d'")
+(defpoll weather_temp :interval "5s"   "$HOME/projects/desktop-brief/eww/scripts/read_state.sh weather '.data.current.temp_f' '?'")
+(defpoll weather_icon :interval "5s"   "$HOME/projects/desktop-brief/eww/scripts/read_state.sh weather '.data.current.icon' '🌡'")
+(defpoll weather_cond :interval "10s"  "$HOME/projects/desktop-brief/eww/scripts/read_state.sh weather '.data.current.condition' '—'")
+(defpoll weather_hi   :interval "60s"  "$HOME/projects/desktop-brief/eww/scripts/read_state.sh weather '.data.today.high_f' '?'")
+(defpoll weather_lo   :interval "60s"  "$HOME/projects/desktop-brief/eww/scripts/read_state.sh weather '.data.today.low_f' '?'")
+
+(defpoll mail_unread  :interval "10s"  "$HOME/projects/desktop-brief/eww/scripts/read_state.sh email '.data.unread_24h_count' '0'")
+(defpoll mail_starred :interval "10s"  "$HOME/projects/desktop-brief/eww/scripts/read_state.sh email '.data.starred_count' '0'")
+
+(defpoll cal_next     :interval "5s"   "$HOME/projects/desktop-brief/eww/scripts/read_state.sh calendar '.data.next_event.title' 'no event'")
+(defpoll cal_mins     :interval "5s"   "$HOME/projects/desktop-brief/eww/scripts/read_state.sh calendar '.data.minutes_until_next' '—'")
+
+(defpoll cpu_pct      :interval "2s"   "$HOME/projects/desktop-brief/eww/scripts/read_state.sh hardware '.data.cpu.overall_pct' '0'")
+(defpoll mem_pct      :interval "2s"   "$HOME/projects/desktop-brief/eww/scripts/read_state.sh hardware '.data.memory.pct' '0'")
+(defpoll cpu_temp     :interval "5s"   "$HOME/projects/desktop-brief/eww/scripts/read_state.sh hardware '.data.cpu.temp_c' '—'")
+
+(defpoll ticker_line  :interval "5s"   "$HOME/projects/desktop-brief/eww/scripts/ticker_line.sh")
+(defpoll mkt_state    :interval "30s"  "$HOME/projects/desktop-brief/eww/scripts/read_state.sh stocks '.data.market_state' '?'")
+(defpoll health_dots  :interval "5s"   "$HOME/projects/desktop-brief/eww/scripts/health_dots.sh")
+
+;; ---- widgets ----------------------------------------------------------------
+(defwidget header []
+  (box :class "header" :orientation "h" :space-evenly false :spacing 0
+    (label :class "brand" :text "▣ DESKTOP BRIEF")
+    (label :class "spacer" :hexpand true :text "")
+    (label :class "mkt-state" :text mkt_state)))
+
+(defwidget clock []
+  (box :class "clock" :orientation "v" :space-evenly false :halign "fill"
+    (label :class "clock-time" :text clock_time)
+    (label :class "clock-date" :text clock_date)))
+
+(defwidget weather []
+  (box :class "tile" :orientation "h" :space-evenly false :spacing 8
+    (label :class "tile-icon" :text weather_icon)
+    (box :orientation "v" :space-evenly false :spacing 0 :hexpand true
+      (label :class "tile-big" :text "${weather_temp}°F" :halign "start")
+      (label :class "tile-sub" :text weather_cond :halign "start")
+      (label :class "tile-meta" :text "hi ${weather_hi} / lo ${weather_lo}" :halign "start"))))
+
+(defwidget calendar []
+  (box :class "tile" :orientation "v" :space-evenly false :spacing 0
+    (label :class "tile-label" :text "▶ NEXT EVENT" :halign "start")
+    (label :class "tile-big" :text cal_next :halign "start" :limit-width 26)
+    (label :class "tile-sub" :text "in ${cal_mins} min" :halign "start")))
+
+(defwidget mail []
+  (box :class "tile" :orientation "h" :space-evenly true :spacing 8
+    (box :orientation "v" :space-evenly false
+      (label :class "tile-big" :text mail_unread :halign "center")
+      (label :class "tile-label" :text "UNREAD 24h" :halign "center"))
+    (box :orientation "v" :space-evenly false
+      (label :class "tile-big tile-accent" :text mail_starred :halign "center")
+      (label :class "tile-label" :text "STARRED" :halign "center"))))
+
+(defwidget hardware []
+  (box :class "tile" :orientation "v" :space-evenly false :spacing 4
+    (label :class "tile-label" :text "▶ SYSTEM" :halign "start")
+    (box :orientation "h" :space-evenly true :spacing 6
+      (box :orientation "v" :space-evenly false
+        (label :class "tile-mid" :text "${cpu_pct}%")
+        (label :class "tile-label" :text "CPU"))
+      (box :orientation "v" :space-evenly false
+        (label :class "tile-mid" :text "${mem_pct}%")
+        (label :class "tile-label" :text "RAM"))
+      (box :orientation "v" :space-evenly false
+        (label :class "tile-mid" :text "${cpu_temp}°")
+        (label :class "tile-label" :text "TEMP")))))
+
+(defwidget ticker []
+  (box :class "tile ticker" :orientation "v" :space-evenly false :spacing 2
+    (label :class "tile-label" :text "▶ MARKETS" :halign "start")
+    (label :class "ticker-line" :text ticker_line :halign "start" :limit-width 38)))
+
+(defwidget health []
+  (box :class "health" :orientation "h" :space-evenly false :spacing 4
+    (label :class "tile-label" :text "▶ HEALTH" :halign "start")
+    (label :hexpand true :text "")
+    (label :class "health-dots" :markup health_dots :halign "end")))
+
+(defwidget overlay_box []
+  (box :class "overlay" :orientation "v" :space-evenly false :spacing 8
+    (header)
+    (clock)
+    (weather)
+    (calendar)
+    (mail)
+    (hardware)
+    (ticker)
+    (health)))
+
+;; ---- windows ----------------------------------------------------------------
+(defwindow overlay
+  :monitor 0
+  :geometry (geometry :x "12px" :y "12px" :width "320px" :height "auto" :anchor "top right")
+  :stacking "fg"
+  :windowtype "dock"
+  :wm-ignore false
+  (overlay_box))
