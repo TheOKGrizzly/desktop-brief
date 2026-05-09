@@ -13,6 +13,9 @@ echo "==> Closing eww overlay"
 eww close overlay 2>/dev/null || true
 rm -f "$HOME/.config/eww/desktop-brief"
 
+echo "==> Removing XDG autostart entry"
+rm -f "$HOME/.config/autostart/desktop-brief-briefing.desktop"
+
 echo "==> Removing GNOME shortcut"
 ID_PATH="/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/desktop-brief/"
 if command -v gsettings >/dev/null 2>&1; then

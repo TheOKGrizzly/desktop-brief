@@ -107,6 +107,12 @@ c_green "✓ systemd --user unit enabled + started"
 # ---- gnome shortcut ----
 bash "$REPO_ROOT/gnome/apply-shortcut.sh" || c_yellow "(GNOME shortcut binding skipped or failed — bind manually in Settings → Keyboard)"
 
+# ---- xdg autostart (auto-open briefing on login) ----
+mkdir -p "$HOME/.config/autostart"
+sed "s|__REPO_ROOT__|$REPO_ROOT|g" "$REPO_ROOT/gnome/desktop-brief-briefing.desktop" \
+    > "$HOME/.config/autostart/desktop-brief-briefing.desktop"
+c_green "✓ XDG autostart entry installed (briefing window opens 8 s after login)"
+
 cat <<EOF
 
 $(c_green "✓ desktop-brief installed.")

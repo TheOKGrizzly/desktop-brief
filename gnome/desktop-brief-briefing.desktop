@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=desktop-brief Jarvis Dashboard
+Comment=Auto-launch the fullscreen briefing on login
+Exec=__REPO_ROOT__/eww/scripts/open_briefing.sh
+Icon=utilities-system-monitor
+Terminal=false
+X-GNOME-Autostart-enabled=true
+X-GNOME-Autostart-Delay=8
+StartupNotify=false
+Categories=Utility;
