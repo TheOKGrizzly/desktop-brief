@@ -24,24 +24,29 @@
 ## What it is
 
 A background daemon polls eight live sources and writes JSON state to
-`~/.local/state/desktop-brief/`. Three independent front-ends consume that
-state, each tuned for a different moment:
+`~/.local/state/desktop-brief/`. Three front-ends consume that state plus a
+fourth in-dashboard surface for asking Claude things:
 
 | Surface | What it shows | When you see it |
 |---|---|---|
-| **Chromium kiosk briefing** | Full-screen Jarvis-themed dashboard with backdrop-filter glass panels, animated arc reactor, scanlines, gauges, and clickable rows | Press `Super+J` |
-| **Eww overlay** | Always-on-top corner widget — clock, weather, ticker, mail counts, system gauges, health dots | `eww open overlay` |
+| **Chromium kiosk briefing** | Full-screen Jarvis-themed dashboard with backdrop-filter glass panels, animated arc reactor, scanlines, gauges, and clickable rows | Press `Super+J`, click the dock icon, or auto-launches on login |
+| **Ask Claude (#08 panel)** | Embedded chat with Claude in the bottom-right of the briefing — Enter to send, multi-turn history, conversational replies in ~2 s | Inside the briefing window |
+| **Eww overlay** *(optional)* | Always-on-top corner widget — clock, weather, ticker, mail counts, system gauges, health dots | `eww open overlay` |
 | **Claude Code SessionStart hook** | One-screen markdown briefing injected into every Claude Code session | Automatic on each new Claude Code session |
 
-All three read the same JSON files. The data layer is decoupled from
-presentation, so you can swap or skin any front-end without touching the
-backend.
+The data layer is decoupled from presentation, so you can swap or skin any
+front-end without touching the backend.
+
+The dashboard footer also has a **CLAUDE pill** — clicking it pops out a full
+Claude Code terminal (with file access, Bash, MCP tools) when the embedded
+chat isn't enough.
 
 ## Architecture
 
 ```
 ┌─ desktop-brief-daemon (systemd --user, asyncio) ─────────────────┐
 │                                                                   │
+│  Pollers (write JSON state):                                      │
 │  ┌─ email_source       Thunderbird MCP (stdio bridge)   60 s ─┐  │
 │  ┌─ calendar_source    Thunderbird MCP + 15-min reminders     │  │
 │  ┌─ weather            wttr.in JSON                    30 min │  │
@@ -50,6 +55,11 @@ backend.
 │  ┌─ news_headlines     Anthropic API + web_search      15 min │  │
 │  ┌─ news_hottake       Anthropic API (analysis)        daily  │  │
 │  └─ grants             Anthropic + web_search → DOE/SBIR 6 h  │  │
+│                                                                   │
+│  Localhost HTTP server (127.0.0.1:8766):                          │
+│  ├─ GET  /<source>.json   serve state JSON to the briefing page  │
+│  ├─ POST /chat            proxy chat turns to Anthropic API      │
+│  └─ POST /launch/claude   spawn `gnome-terminal -- claude`       │
 │                                                                   │
 │  health.json + LLM-usage caps + atomic JSON state writes          │
 └─────────────────────────────┬────────────────────────────────────-┘
@@ -60,8 +70,9 @@ backend.
    │ Fullscreen HTML/CSS/JS    │    │ Always-on-top corner │
    │ Glass panels, scanlines,  │    │ widget. defpoll on   │
    │ arc reactor, gauges.      │    │ jq state extracts.   │
-   │ Bound to Super+J.         │    │ Light + native.      │
-   │ Reads via local HTTP:8766 │    │ Reads JSON via jq.   │
+   │ Includes #08 ASK CLAUDE   │    │ Light + native.      │
+   │ chat panel + pop-out pill │    │ Reads JSON via jq.   │
+   │ Bound to Super+J.         │    │                      │
    └───────────────────────────┘    └──────────────────────┘
                               │
                               ▼
@@ -95,6 +106,16 @@ backend.
 - **💰 Grants** — DOE / SBIR / ARPA-E open funding opportunities for critical
   minerals, REE, advanced materials, and geothermal lithium. Sorted by
   deadline. Refreshed every 6 h.
+
+### Interactive surfaces in the briefing
+
+- **💬 Ask Claude (#08 panel)** — embedded multi-turn chat with Claude
+  Sonnet 4.6, bottom-right of the dashboard. Enter to send, Shift+Enter for
+  newlines, history capped at 12 messages. Conversational replies in ~2 s.
+  No file access / Bash / MCP — for that, click the CLAUDE pill in the footer.
+- **🚀 CLAUDE pill** — bottom-right of the footer. One click pops out a real
+  Claude Code session in `gnome-terminal` (or kitty / ghostty / alacritty /
+  xterm — first found wins). Full file access, Bash, MCP, and the works.
 
 ### Reliability + cost guardrails
 
@@ -132,7 +153,7 @@ status, MCP bridge reachability, and per-source freshness — emits coloured
 - Node ≥ 18 (for the Thunderbird MCP bridge)
 - Cargo (the installer builds Eww from upstream git)
 - Thunderbird with the [thunderbird-mcp](https://github.com/TKasperczyk/thunderbird-mcp) extension installed
-- An Anthropic API key (only required for news / hot-takes / grants)
+- An [Anthropic API key](https://console.anthropic.com/settings/keys) — **required** for the news headlines, daily hot-take, grants polling, **and the embedded #08 Ask Claude chat panel**. Without it the daemon still runs (weather, stocks, hardware, email, calendar all work) but the LLM-backed sources and the chat panel are disabled.
 
 ### Install
 
@@ -181,8 +202,8 @@ intervals) and are loaded from `.env` at startup.
 
 | Name | Default | Purpose |
 |---|---|---|
-| `ANTHROPIC_API_KEY` | _required_ for LLM sources | News / hot-take / grants |
-| `CLAUDE_MODEL` | `claude-sonnet-4-6` | Override the model for LLM-backed sources |
+| `ANTHROPIC_API_KEY` | _required_ for LLM-backed features | News headlines · daily hot-take · grants polling · **embedded chat panel** |
+| `CLAUDE_MODEL` | `claude-sonnet-4-6` | Override the model used for news / hot-take / grants / chat |
 | `THUNDERBIRD_MCP_BRIDGE` | `~/projects/thunderbird-mcp/mcp-bridge.cjs` | Path to the bridge if you cloned it elsewhere |
 | `WEATHER_QUERY` | `Norman,OK` | wttr.in location string |
 | `TZ_LOCAL` | `America/Chicago` | Display timezone |
@@ -253,7 +274,10 @@ the Python source files in `src/desktop_brief/sources/`.
 - **Local HTTP server for the briefing** — Chromium blocks `file://` fetches
   for security. A localhost-only `http.server` thread on `127.0.0.1:8766`
   serves the state directory; no `--allow-file-access-from-files` flags or
-  fragile URL hacks.
+  fragile URL hacks. The same server hosts the `POST /chat` endpoint (chat
+  panel proxies to the Anthropic API) and `POST /launch/claude` (allowlisted
+  spawn of `gnome-terminal -- claude` for the pop-out terminal). No shell
+  interpolation; argv is fixed at module load.
 
 ## Tested environment
 
