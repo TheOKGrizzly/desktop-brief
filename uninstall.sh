@@ -16,6 +16,19 @@ rm -f "$HOME/.config/eww/desktop-brief"
 echo "==> Removing XDG autostart entry"
 rm -f "$HOME/.config/autostart/desktop-brief-briefing.desktop"
 
+echo "==> Removing app launcher + dock pin"
+rm -f "$HOME/.local/share/applications/desktop-brief.desktop"
+rm -f "$HOME/.local/share/icons/hicolor/scalable/apps/desktop-brief.svg"
+if command -v gsettings >/dev/null 2>&1; then
+    current="$(gsettings get org.gnome.shell favorite-apps 2>/dev/null || echo "@as []")"
+    if [[ "$current" == *"desktop-brief.desktop"* ]]; then
+        cleaned="${current//\'desktop-brief.desktop\', /}"
+        cleaned="${cleaned//, \'desktop-brief.desktop\'/}"
+        cleaned="${cleaned//\[\'desktop-brief.desktop\'\]/[]}"
+        gsettings set org.gnome.shell favorite-apps "$cleaned"
+    fi
+fi
+
 echo "==> Removing GNOME shortcut"
 ID_PATH="/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/desktop-brief/"
 if command -v gsettings >/dev/null 2>&1; then

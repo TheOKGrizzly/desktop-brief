@@ -435,10 +435,37 @@ body::before {
   font-size: 10px;
 }
 
+/* Footer right cluster: Claude launch + arc reactor */
+.footer-right {
+  display: flex; align-items: center; gap: 14px;
+  justify-self: end;
+}
+
+.claude-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  padding: 5px 11px;
+  border: 1px solid #d97757;
+  background: rgba(217, 119, 87, 0.10);
+  color: #d97757;
+  cursor: pointer;
+  clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+  transition: all 140ms;
+}
+.claude-pill:hover {
+  background: rgba(217, 119, 87, 0.25);
+  color: #f1c0aa;
+  text-shadow: 0 0 6px #d97757;
+  box-shadow: 0 0 12px rgba(217, 119, 87, 0.5);
+}
+.claude-pill svg { filter: drop-shadow(0 0 4px rgba(217, 119, 87, 0.6)); }
+
 /* Arc reactor */
 .reactor {
   position: relative;
-  justify-self: end;
   width: 24px; height: 24px;
 }
 .reactor-core {

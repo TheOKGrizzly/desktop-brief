@@ -319,3 +319,17 @@ window.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') window.close();
   if (e.key === 'r' || e.key === 'R') refreshAll();
 });
+
+/* Claude launcher: tries the claude-cli:// deep link first; if the browser
+ * silently swallows it, falls back to a one-shot endpoint we expose via
+ * the daemon. The endpoint runs `gnome-terminal -- claude` server-side. */
+$('claude-btn').addEventListener('click', async () => {
+  // Try the deep-link first.
+  const link = document.createElement('a');
+  link.href = 'claude-cli://launch';
+  link.click();
+  // Fall back: ping the local launcher endpoint (added in daemon web_server).
+  try {
+    await fetch(`${STATE_BASE}/launch/claude`, { method: 'POST' });
+  } catch (_) { /* link probably worked */ }
+});

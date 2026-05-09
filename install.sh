@@ -107,6 +107,9 @@ c_green "✓ systemd --user unit enabled + started"
 # ---- gnome shortcut ----
 bash "$REPO_ROOT/gnome/apply-shortcut.sh" || c_yellow "(GNOME shortcut binding skipped or failed — bind manually in Settings → Keyboard)"
 
+# ---- app launcher (dock icon) ----
+bash "$REPO_ROOT/gnome/install-launcher.sh" || c_yellow "(launcher install failed)"
+
 # ---- xdg autostart (auto-open briefing on login) ----
 mkdir -p "$HOME/.config/autostart"
 sed "s|__REPO_ROOT__|$REPO_ROOT|g" "$REPO_ROOT/gnome/desktop-brief-briefing.desktop" \

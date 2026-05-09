@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=desktop-brief
+GenericName=Jarvis Dashboard
+Comment=Live Jarvis-style desktop briefing — email, calendar, weather, markets, news, grants
+Exec=__REPO_ROOT__/eww/scripts/open_briefing.sh
+Icon=desktop-brief
+Terminal=false
+StartupNotify=true
+Categories=Utility;Office;Monitor;
+Keywords=briefing;jarvis;dashboard;
