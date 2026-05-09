@@ -320,16 +320,78 @@ window.addEventListener('keydown', (e) => {
   if (e.key === 'r' || e.key === 'R') refreshAll();
 });
 
-/* Claude launcher: tries the claude-cli:// deep link first; if the browser
- * silently swallows it, falls back to a one-shot endpoint we expose via
- * the daemon. The endpoint runs `gnome-terminal -- claude` server-side. */
+/* Claude pill = pop out to a real terminal with full Claude Code. */
 $('claude-btn').addEventListener('click', async () => {
-  // Try the deep-link first.
   const link = document.createElement('a');
   link.href = 'claude-cli://launch';
   link.click();
-  // Fall back: ping the local launcher endpoint (added in daemon web_server).
   try {
     await fetch(`${STATE_BASE}/launch/claude`, { method: 'POST' });
-  } catch (_) { /* link probably worked */ }
+  } catch (_) { /* deep link probably worked */ }
+});
+
+/* In-panel Claude chat (Anthropic API direct, no MCP/Bash/files). */
+const claudeLog = $('claude-log');
+const claudeInput = $('claude-input');
+const claudeForm = $('claude-form');
+const claudeSend = $('claude-send');
+const claudeHistory = [];   // [{role:'user'|'assistant', content:'...'}]
+const CLAUDE_HISTORY_CAP = 12;
+
+function appendClaudeMsg(role, text) {
+  const el = document.createElement('div');
+  el.className = `claude-msg claude-msg-${role}`;
+  el.textContent = text;
+  claudeLog.appendChild(el);
+  claudeLog.scrollTop = claudeLog.scrollHeight;
+  return el;
+}
+
+async function sendClaudeMessage(text) {
+  appendClaudeMsg('user', text);
+  claudeHistory.push({ role: 'user', content: text });
+  while (claudeHistory.length > CLAUDE_HISTORY_CAP) claudeHistory.shift();
+
+  const placeholder = appendClaudeMsg('assistant', '');
+  placeholder.classList.add('thinking');
+  claudeSend.disabled = true;
+
+  try {
+    const r = await fetch(`${STATE_BASE}/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages: claudeHistory }),
+    });
+    if (!r.ok) {
+      const errText = await r.text();
+      throw new Error(`HTTP ${r.status}: ${errText.slice(0, 200)}`);
+    }
+    const j = await r.json();
+    const reply = (j.text || '').trim() || '(empty reply)';
+    placeholder.classList.remove('thinking');
+    placeholder.textContent = reply;
+    claudeHistory.push({ role: 'assistant', content: reply });
+  } catch (e) {
+    placeholder.remove();
+    appendClaudeMsg('error', `error: ${e.message}`);
+    claudeHistory.pop();   // un-push the user message so retry doesn't double up
+  } finally {
+    claudeSend.disabled = false;
+  }
+}
+
+claudeForm.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const text = claudeInput.value.trim();
+  if (!text) return;
+  claudeInput.value = '';
+  sendClaudeMessage(text);
+});
+
+// Enter to send (Shift+Enter for newline).
+claudeInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    claudeForm.requestSubmit();
+  }
 });

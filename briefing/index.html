@@ -134,6 +134,23 @@
     <ul id="grants-list" class="row-list scrollable"></ul>
   </section>
 
+  <!-- Claude chat panel (in-place chat; pop-out terminal via the CLAUDE pill) -->
+  <section class="panel panel-claude" data-source="claude">
+    <div class="panel-head">
+      <h2><span class="hexlabel claude-hex">08</span> ASK CLAUDE</h2>
+      <div class="panel-meta dim" id="claude-meta">sonnet-4-6 · ↵ to send</div>
+    </div>
+    <div id="claude-log" class="claude-log scrollable">
+      <div class="claude-msg claude-msg-system">
+        <span>Ready. Ask anything — quick questions stay inline; click the CLAUDE pill below to pop out a full Claude Code terminal.</span>
+      </div>
+    </div>
+    <form id="claude-form" class="claude-input">
+      <textarea id="claude-input" rows="2" placeholder="Ask…" autocomplete="off"></textarea>
+      <button type="submit" id="claude-send" class="pill claude-send">SEND</button>
+    </form>
+  </section>
+
 </main>
 
 <footer class="hud-footer">

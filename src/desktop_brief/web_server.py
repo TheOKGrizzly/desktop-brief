@@ -72,7 +72,8 @@ class _SilentHandler(http.server.SimpleHTTPRequestHandler):
         self.end_headers()
 
     def do_POST(self) -> None:  # noqa: N802
-        # Only paths under /launch/<allowlisted-name> are honored.
+        if self.path == "/chat" or self.path.startswith("/chat?"):
+            return self._handle_chat()
         if not self.path.startswith("/launch/"):
             self.send_error(404)
             return
@@ -96,6 +97,79 @@ class _SilentHandler(http.server.SimpleHTTPRequestHandler):
         except Exception as e:
             logger.exception("launch %s failed", name)
             self.send_error(500, f"launch failed: {e}")
+
+    def _handle_chat(self) -> None:
+        """Proxy a chat turn to Anthropic API. Body: {messages: [...]}.
+
+        Run the async LLMClient.call inside a fresh event loop on this
+        request thread (the http.server is threaded, so this is safe).
+        """
+        try:
+            length = int(self.headers.get("Content-Length") or "0")
+            body_raw = self.rfile.read(length).decode("utf-8") if length else "{}"
+            import json as _json
+            body = _json.loads(body_raw or "{}")
+            messages = body.get("messages") or []
+            if not isinstance(messages, list) or not messages:
+                self.send_error(400, "missing 'messages'")
+                return
+
+            from desktop_brief.config import load_config
+            from desktop_brief.llm.client import LLMClient
+
+            cfg = load_config()
+            if not cfg.anthropic_api_key:
+                self.send_error(503, "ANTHROPIC_API_KEY not set on the daemon")
+                return
+
+            client = LLMClient(cfg)
+
+            # Convert message history to a single user prompt + system, since
+            # the existing call() helper takes one user message. For multi-turn
+            # we synthesize a transcript-style prompt the model is comfortable
+            # with: previous turns as context, latest user message as the ask.
+            *prior, last_user = messages
+            transcript = "\n\n".join(
+                f"[{m.get('role','?').upper()}]\n{m.get('content','')}".strip()
+                for m in prior
+            )
+            user_msg = (
+                last_user.get("content", "") if isinstance(last_user, dict) else ""
+            )
+            if transcript:
+                user_msg = f"Conversation so far:\n{transcript}\n\n[USER]\n{user_msg}"
+
+            system_prompt = (
+                "You are Claude, a helpful AI assistant embedded in Travis's "
+                "desktop-brief Jarvis dashboard. Keep responses concise and "
+                "conversational — typically 1-4 sentences unless the question "
+                "explicitly asks for detail. The user can pop out a full Claude "
+                "Code terminal session via the CLAUDE pill in the footer if they "
+                "need file access, code editing, or shell execution."
+            )
+
+            import asyncio as _asyncio
+            text = _asyncio.run(client.call(
+                system_prompt=system_prompt,
+                user_message=user_msg,
+                source_label="dashboard_chat",
+                daily_cap=cfg.llm_daily_cap_news * 2,  # generous cap; chat is bursty
+                use_web_search=False,
+                max_tokens=1024,
+            ))
+
+            payload = _json.dumps({"text": text}).encode()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(payload)))
+            self.end_headers()
+            self.wfile.write(payload)
+        except Exception as e:
+            logger.exception("/chat failed")
+            try:
+                self.send_error(500, f"chat error: {e}")
+            except Exception:
+                pass
 
 
 class _ReuseAddrServer(socketserver.ThreadingTCPServer):

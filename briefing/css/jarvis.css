@@ -435,6 +435,94 @@ body::before {
   font-size: 10px;
 }
 
+/* Claude chat panel (#08) */
+.panel-claude {
+  border-color: rgba(217, 119, 87, 0.55);
+}
+.panel-claude::before, .panel-claude::after { border-color: #d97757; }
+.panel-claude .panel-head { border-bottom-color: rgba(217, 119, 87, 0.30); }
+.panel-claude .panel-head h2 { color: #f1c0aa; }
+.claude-hex { color: #d97757 !important; background: rgba(217, 119, 87, 0.18) !important; }
+
+.claude-log {
+  flex: 1;
+  display: flex; flex-direction: column;
+  gap: 6px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  padding-right: 4px;
+  min-height: 0;
+}
+.claude-msg {
+  padding: 6px 10px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%);
+}
+.claude-msg-user {
+  align-self: flex-end;
+  background: rgba(34, 211, 238, 0.16);
+  color: var(--text-bright);
+  border-left: 2px solid var(--accent);
+  max-width: 92%;
+}
+.claude-msg-assistant {
+  align-self: flex-start;
+  background: rgba(217, 119, 87, 0.10);
+  color: var(--text);
+  border-left: 2px solid #d97757;
+  max-width: 96%;
+}
+.claude-msg-system {
+  align-self: stretch;
+  font-size: 10px;
+  color: var(--muted);
+  text-align: center;
+  padding: 4px 6px;
+  letter-spacing: 1px;
+  background: transparent;
+}
+.claude-msg-error {
+  align-self: stretch;
+  background: rgba(239, 68, 68, 0.12);
+  color: var(--accent-red);
+  border-left: 2px solid var(--accent-red);
+}
+.claude-msg.thinking::after {
+  content: '▌';
+  animation: pulse 1s ease-in-out infinite;
+  color: #d97757;
+}
+
+.claude-input {
+  display: flex; gap: 6px;
+  margin-top: 8px;
+  flex-shrink: 0;
+}
+#claude-input {
+  flex: 1;
+  background: rgba(2, 6, 10, 0.7);
+  border: 1px solid rgba(217, 119, 87, 0.4);
+  color: var(--text-bright);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 6px 8px;
+  resize: none;
+  outline: none;
+  transition: border-color 120ms;
+}
+#claude-input:focus { border-color: #d97757; box-shadow: 0 0 8px rgba(217, 119, 87, 0.35); }
+
+.claude-send {
+  border-color: rgba(217, 119, 87, 0.6) !important;
+  background: rgba(217, 119, 87, 0.18) !important;
+  color: #f1c0aa !important;
+  cursor: pointer;
+}
+.claude-send:hover { background: rgba(217, 119, 87, 0.32) !important; }
+.claude-send:disabled { opacity: 0.5; cursor: not-allowed; }
+
 /* Footer right cluster: Claude launch + arc reactor */
 .footer-right {
   display: flex; align-items: center; gap: 14px;
