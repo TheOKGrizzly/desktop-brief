@@ -255,6 +255,27 @@ the Python source files in `src/desktop_brief/sources/`.
   serves the state directory; no `--allow-file-access-from-files` flags or
   fragile URL hacks.
 
+## Tested environment
+
+Built and verified on:
+
+| | |
+|---|---|
+| **Hardware** | Dell G7 7700 — Intel i7-10750H (12 logical cores), 31.1 GB RAM, NVIDIA GeForce RTX 2070 |
+| **OS** | Ubuntu 24.04.4 LTS (Noble Numbat), kernel 6.17.0-23-generic |
+| **Desktop** | GNOME Shell 46.0 on Xorg (X11) |
+| **Toolchain** | Python 3.12.3 · Node v18.19.1 · Eww 0.6.0 (built from upstream `master`) |
+| **Thunderbird** | Snap (channel current), with `thunderbird-mcp` extension |
+
+It should work on any Ubuntu 22.04+ box with an X11 session, GNOME or another
+EWMH-compliant WM, and a recent Python. **It will not work on GNOME Wayland**
+because Mutter doesn't implement `wlr-layer-shell` — Eww silently fails to
+anchor. If you're on Wayland, log out and pick the **Ubuntu on Xorg** session
+at the login screen.
+
+GPU panel auto-hides if `nvidia-smi` is absent (AMD/Intel GPU users: PRs
+welcome to add `radeontop` / `intel_gpu_top` parsing).
+
 ## Acknowledgements
 
 - [TKasperczyk/thunderbird-mcp](https://github.com/TKasperczyk/thunderbird-mcp) — the Thunderbird MCP extension and bridge
